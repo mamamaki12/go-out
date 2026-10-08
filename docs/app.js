@@ -26,11 +26,11 @@ function render(){
 function detail(item){
  const body=$('detail-body');body.replaceChildren(photo(item,'detail-image'));const content=el('div','detail-content');content.append(el('span','area',item.area),el('h2','',item.title),el('p','',item.intro));
  const facts=el('dl','facts');const rows=[['開催日',item.type==='event'?item.dateText:''],['場所',item.venue],['住所',item.address],['時間',item.hours],['休日',item.closed],['料金',item.price],['アクセス',item.access],['駐車場',item.parking]];for(const [key,value] of rows){if(!value)continue;const row=el('div');row.append(el('dt','',key),el('dd','',value));facts.append(row);}content.append(facts);
- const links=el('div','detail-links');links.append(actionLink('公式情報を確認 ↗',item.url));
+ const links=el('div','detail-links');links.append(actionLink(item.sourceName?'掲載元で確認 ↗':'公式情報を確認 ↗',item.url));
  const transport=$('transport').value,mode=transport==='car'?'driving':transport==='transit'?'transit':'';
  const destination=(item.address+' '+item.title.replace(/^20\d{2}\s*/,'' )).trim();
  links.append(actionLink(mode?'選んだ移動手段で経路を見る ↗':'Google マップで見る ↗',mode?`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&travelmode=${mode}`:`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destination)}`,'secondary'));
- const save=el('button','detail-save',saved.includes(item.id)?'♥ 保存済み':'♡ 行きたい');save.onclick=()=>{toggle(item.id);save.textContent=saved.includes(item.id)?'♥ 保存済み':'♡ 行きたい';};links.append(save);content.append(links,el('p','source-credit','情報・画像：鹿児島県観光サイト「かごしまの旅」 / 確認 '+new Date(item.checkedAt).toLocaleDateString('ja-JP')));body.append(content);$('detail').showModal();
+ const save=el('button','detail-save',saved.includes(item.id)?'♥ 保存済み':'♡ 行きたい');save.onclick=()=>{toggle(item.id);save.textContent=saved.includes(item.id)?'♥ 保存済み':'♡ 行きたい';};links.append(save);const credit=el('p','source-credit');credit.append(actionLink(item.sourceName?'Powered by '+item.sourceName:'情報・画像：鹿児島県観光サイト「かごしまの旅」',item.sourceUrl||'https://www.kagoshima-kankou.com/'),document.createTextNode(' / 確認 '+new Date(item.checkedAt).toLocaleDateString('ja-JP')));content.append(links,credit);body.append(content);$('detail').showModal();
 }
 $('close').onclick=()=>$('detail').close();$('detail').addEventListener('click',event=>{if(event.target===$('detail')){const r=$('detail').getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)$('detail').close();}});
 $('custom-date').value=todayJST();

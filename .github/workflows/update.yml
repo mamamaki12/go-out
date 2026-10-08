@@ -20,6 +20,8 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run collect
+        env:
+          HOTPEPPER_API_KEY: ${{ secrets.HOTPEPPER_API_KEY }}
       - name: Save updated information
         run: |
           git config user.name 'github-actions[bot]'

@@ -1,6 +1,7 @@
 import {load} from 'cheerio';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {parseDates,accessFlags} from '../docs/lib.js';
+import {collectHotpepper} from './hotpepper.mjs';
 const base='https://www.kagoshima-kankou.com';
 const clean=s=>String(s||'').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
 async function html(url){const r=await fetch(url,{signal:AbortSignal.timeout(25000),headers:{'User-Agent':'GoOutKagoshima/1.0 (+https://github.com/mamamaki12/go-out)'}});if(!r.ok)throw new Error(`${r.status} ${url}`);return load(await r.text());}
@@ -13,7 +14,7 @@ for(let area=1;area<=7;area++){
  try{const $=await html(`${base}/guide?rta%5B0%5D=${area}`);let n=0;$('a[href]').each((_,el)=>{const u=$(el).attr('href');if(/^https:\/\/www.kagoshima-kankou.com\/guide\/\d+$/.test(u)&&n++<18)links.add(u);});}catch(e){errors.push(e.message);}
 }
 let previous={items:[]};try{previous=JSON.parse(await readFile(new URL('../docs/data.json',import.meta.url)));}catch{}
-const records=new Map(previous.items.map(x=>[x.url,x]));let success=0;
+const records=new Map(previous.items.filter(x=>!x.id.startsWith('hotpepper-')).map(x=>[x.url,x]));let success=0;
 const urls=[...links];
 for(let i=0;i<urls.length;i+=4){
  await Promise.all(urls.slice(i,i+4).map(async url=>{
@@ -42,6 +43,7 @@ for(let i=0;i<urls.length;i+=4){
 if(!success)throw new Error('No detail pages collected; retaining previous data');
 const today=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Tokyo'});
 const items=[...new Map([...records.values()].map(x=>[x.title.replace(/\s/g,''),x])).values()].filter(x=>x.type==='spot'||(!x.cancelled&&(!x.ranges.length||x.ranges.some(r=>r.end>=today))));
+try{items.push(...await collectHotpepper());}catch(error){errors.push(error.message);console.log('Hot Pepper collection failed; official data will still be updated.');}
 await mkdir(new URL('../docs/',import.meta.url),{recursive:true});
 await writeFile(new URL('../docs/data.json',import.meta.url),JSON.stringify({updatedAt:new Date().toISOString(),source:'かごしまの旅（鹿児島県観光サイト）',sourceUrl:base,items,health:{checked:success,errors:errors.length}}));
 console.log(JSON.stringify({total:items.length,events:items.filter(x=>x.type==='event').length,spots:items.filter(x=>x.type==='spot').length,errors:errors.slice(0,8)}));

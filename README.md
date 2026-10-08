@@ -25,4 +25,12 @@ GitHub Pagesを使う場合はmainブランチの `/docs` を選択。非公開�
 
 ## 今後の連携
 
+### ホットペッパー（APIキー設定待ち）
+
+公式グルメサーチAPIで鹿児島県の飲食店を最大1,000件取得するアダプターを実装済み。APIキー未設定の場合は公式観光情報だけを更新します。実APIでの取得確認には有効なキーが必要です。
+
+リクルートWEBサービスでキーを発行した後、GitHubリポジトリの Settings → Secrets and variables → Actions → New repository secret に、名前 `HOTPEPPER_API_KEY` と値を設定します。キーはチャットやソースコードに貼らず、Secretsへ直接登録してください。その後 Actions → Update outing information → Run workflow で初回取得します。APIキーはブラウザに送信しません。利用時はサービスの利用規約に従ってください。
+
+Google Placesは課金設定とAPIキー、保存制限に合わせたサーバー側設計が必要です。Instagramは公式APIで取得できるアカウント・投稿範囲の確認と認証が必要です。この2つの情報取得は未実装です。
+
 公式情報版の次に、Instagram、ホットペッパー、Google Mapsを追加予定。公式APIの利用範囲、APIキー、費用、保存・表示条件を確認してから実装する。現状のGoogle Maps連携は経路検索へのリンクであり、店舗情報の取得ではない。
