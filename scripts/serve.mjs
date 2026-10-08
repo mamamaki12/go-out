@@ -1,0 +1,3 @@
+import {createServer} from 'node:http';import {readFile} from 'node:fs/promises';
+const types={html:'text/html; charset=utf-8',css:'text/css; charset=utf-8',js:'text/javascript; charset=utf-8',json:'application/json; charset=utf-8'};
+createServer(async(req,res)=>{try{const p=new URL(req.url,'http://localhost').pathname;if(!/^\/(index.html|app.js|lib.js|style.css|data.json)?$/.test(p))throw new Error();const file=p==='/'?'index.html':p.slice(1);res.setHeader('Content-Type',types[file.split('.').pop()]);res.end(await readFile(new URL('../docs/'+file,import.meta.url)));}catch{res.statusCode=404;res.end('Not found');}}).listen(4174,'127.0.0.1',()=>console.log('http://127.0.0.1:4174'));
