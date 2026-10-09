@@ -1,3 +1,4 @@
+import {collectLocalNews} from './local-news.mjs';
 import {load} from 'cheerio';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {parseDates,accessFlags} from '../docs/lib.js';
@@ -47,3 +48,5 @@ try{items.push(...await collectHotpepper());}catch(error){errors.push(error.mess
 await mkdir(new URL('../docs/',import.meta.url),{recursive:true});
 await writeFile(new URL('../docs/data.json',import.meta.url),JSON.stringify({updatedAt:new Date().toISOString(),source:'かごしまの旅（鹿児島県観光サイト）',sourceUrl:base,items,health:{checked:success,errors:errors.length}}));
 console.log(JSON.stringify({total:items.length,events:items.filter(x=>x.type==='event').length,spots:items.filter(x=>x.type==='spot').length,errors:errors.slice(0,8)}));
+
+await collectLocalNews();
