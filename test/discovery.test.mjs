@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {parseFeed} from '../scripts/local-news.mjs';
-import {instagramUrl} from '../docs/discovery.js';
 test('RSS uses publication dates, rejects stale entries and unsafe links',()=>{
  const now=Date.parse('2026-10-09T00:00:00Z');
  const xml='<rss><channel>'+[
