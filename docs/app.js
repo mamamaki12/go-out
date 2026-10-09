@@ -6,7 +6,7 @@ function toast(text){$('toast').textContent=text;$('toast').style.display='block
 function toggle(id){saved=saved.includes(id)?saved.filter(x=>x!==id):[...saved,id];try{localStorage.setItem('go-out-saved-v1',JSON.stringify(saved));toast(saved.includes(id)?'行きたいリストに保存しました':'保存を解除しました');}catch{toast('ブラウザに保存できません。このページ内だけで保持します。');}render();}
 function safeUrl(raw){try{const u=new URL(raw);return ['https:','http:'].includes(u.protocol)?u.href:null;}catch{return null;}}
 function photo(item,cls){const img=el('img',cls);img.alt=item.title;img.loading='lazy';const u=safeUrl(item.image);if(u)img.src=u;img.onerror=()=>{img.removeAttribute('src');img.alt='写真は公式サイトでご確認ください';img.onerror=null;};return img;}
-function actionLink(text,url,cls){const a=el('a',cls,text);a.href=safeUrl(url)||'#';a.target='_blank';a.rel='noopener noreferrer';return a;}
+function actionLink(text,url,cls){const a=el('a',cls,text);a.href=safeUrl(url)||'#';a.rel='noopener noreferrer';return a;}
 function filters(){return {type:kind,area:$('area').value,genre:$('genre').value,transport:$('transport').value,query:$('search').value.trim(),window:dateWindow($('when').value,$('custom-date').value)};}
 function render(){
  if(!data)return;const f=filters();$('saved-count').textContent=saved.length;$('saved-toggle').setAttribute('aria-pressed',String(savedOnly));$('custom-wrap').hidden=$('when').value!=='custom';$('date-note').hidden=!f.window;
