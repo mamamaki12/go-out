@@ -14,11 +14,11 @@ function render(){
  const items=data.items.filter(x=>matches(x,f)&&(!savedOnly||saved.includes(x.id))).sort((a,b)=>{if(a.type!==b.type)return a.type==='event'?-1:1;return (a.ranges[0]?.start||'9999').localeCompare(b.ranges[0]?.start||'9999');});
  $('count').textContent=`${items.length}件のよりみち`;$('cards').replaceChildren();
  for(const item of items.slice(0,limit)){
-  const card=el('article','card'),image=el('div','image-wrap');image.append(photo(item));image.append(el('span','kind',item.type==='event'?'EVENT':'SPOT'));
-  const save=el('button',`save ${saved.includes(item.id)?'saved':''}`,saved.includes(item.id)?'♥':'♡');save.setAttribute('aria-label',`${item.title}を${saved.includes(item.id)?'保存解除':'保存'}`);save.setAttribute('aria-pressed',String(saved.includes(item.id)));save.onclick=()=>toggle(item.id);image.append(save);
-  const content=el('div','card-content');content.append(el('span','area',item.area+(item.sourceName?' · '+item.sourceName:'')));const title=el('button','card-title',item.title);title.onclick=()=>detail(item);content.append(title);
+  const card=el('article','card'),image=el('div','image-wrap');card.onclick=()=>detail(item);image.append(photo(item));image.append(el('span','kind',item.type==='event'?'EVENT':'SPOT'));
+  const save=el('button',`save ${saved.includes(item.id)?'saved':''}`,saved.includes(item.id)?'♥':'♡');save.setAttribute('aria-label',`${item.title}を${saved.includes(item.id)?'保存解除':'保存'}`);save.setAttribute('aria-pressed',String(saved.includes(item.id)));save.onclick=event=>{event.stopPropagation();toggle(item.id);};image.append(save);
+  const content=el('div','card-content');content.append(el('span','area',item.area+(item.sourceName?' · '+item.sourceName:'')));const title=el('button','card-title',item.title);title.setAttribute('aria-label',item.title+'の詳細を見る');content.append(title);
   const dateLabel=item.type==='event'?(item.ranges.length?item.dateText.slice(0,90):'開催日は公式情報で確認'):item.hours?item.hours.slice(0,70):'営業日・時間は公式情報で確認';content.append(el('p','card-date',dateLabel));const tags=el('div','card-tags');for(const tag of item.genres.slice(0,2))tags.append(el('span','',tag));content.append(tags);
-  const bottom=el('div','card-bottom');bottom.append(el('span','',[item.car?'車の案内あり':'',item.transit?'公共交通の案内あり':''].filter(Boolean).join(' / ')||'アクセス要確認'));const open=el('button','','詳細を見る ↗');open.onclick=()=>detail(item);bottom.append(open);content.append(bottom);card.append(image,content);$('cards').append(card);
+  const bottom=el('div','card-bottom');bottom.append(el('span','',[item.car?'車の案内あり':'',item.transit?'公共交通の案内あり':''].filter(Boolean).join(' / ')||'アクセス要確認'));content.append(bottom);card.append(image,content);$('cards').append(card);
  }
  if(!items.length)$('cards').append(el('p','empty',savedOnly?'保存した場所がありません。♡から気になる場所を保存できます。':'この条件の候補が見つかりませんでした。\nエリアや日付、移動手段を変更してみてください。'));
  $('more').hidden=items.length<=limit;

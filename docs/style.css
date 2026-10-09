@@ -9,3 +9,5 @@
 @media(min-width:551px){.hero{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
 
 @media(max-width:550px){.hero{grid-template-columns:minmax(0,1fr) minmax(0,.55fr);column-gap:12px;align-items:start}.hero h1{font-size:clamp(1.35rem,6vw,2.4375rem)}.hero .landscape{height:clamp(110px,35vw,190px);margin-top:48px}.hero .sun{width:30px;height:30px;top:18px;right:18px}.hero .mountain{height:75px;bottom:30px}.hero .water{height:35px;bottom:8px}.hero .land{height:24px}.hero .cloud{left:10px;top:18px;width:25px}.hero .hero-tags{gap:5px}}
+
+.card{position:relative;cursor:pointer}.card-title::after{content:"";position:absolute;inset:0;border-radius:inherit}.card-title:focus-visible{outline:none}.card-title:focus-visible::after{outline:3px solid #d49c38;outline-offset:-3px}.card .save{z-index:2}
