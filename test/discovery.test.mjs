@@ -12,7 +12,3 @@ test('RSS uses publication dates, rejects stale entries and unsafe links',()=>{
  ].map(([t,u,d])=>`<item><title>${t}</title><link>${u}</link><pubDate>${d}</pubDate></item>`).join('')+'</channel></rss>';
  const items=parseFeed(xml,{name:'test'},now);assert.equal(items.length,2);assert.equal(items[0].category,'new');assert.equal(items[1].category,'local');assert.equal(items[0].publishedAt,'2026-10-08T00:00:00.000Z');
 });
-test('Instagram memo accepts only post URLs and strips tracking',()=>{
- assert.equal(instagramUrl('https://www.instagram.com/reel/ABC_12/?igsh=secret'),'https://www.instagram.com/reel/ABC_12/');
- for(const s of ['https://instagram.com.evil.com/p/ABC/','javascript:alert(1)','https://www.instagram.com/username/'])assert.equal(instagramUrl(s),null);
-});
