@@ -19,7 +19,7 @@ export function parseFeed(xml,source,now=Date.now()){
 }
 export async function collectLocalNews(){
  const target=new URL('../docs/news.json',import.meta.url);let old={items:[]};try{old=JSON.parse(await readFile(target));}catch{}
- const items=[],status=[];
+ const items=[...old.items],status=[];
  for(const source of sources){try{const r=await fetch(source.url,{signal:AbortSignal.timeout(20000)});if(!r.ok)throw Error();const xml=await r.text();if(!/<(?:rss|rdf:RDF)\b/.test(xml))throw Error();const found=parseFeed(xml,source);items.push(...found);status.push({name:source.name,ok:true,count:found.length});}catch{items.push(...old.items.filter(x=>x.source===source.name));status.push({name:source.name,ok:false});}}
  const unique=[...new Map(items.filter(x=>Date.now()-Date.parse(x.publishedAt)<=180*86400000).map(x=>[x.url,x])).values()].sort((a,b)=>b.publishedAt.localeCompare(a.publishedAt));
  await writeFile(target,JSON.stringify({updatedAt:new Date().toISOString(),sources:status,items:unique}));console.log(JSON.stringify({news:unique.length,sources:status}));
