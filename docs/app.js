@@ -1,11 +1,12 @@
-import {todayJST,dateWindow,matches,parseDates,cancelledEvent} from './lib.js?v=2';
+import {todayJST,dateWindow,matches,parseDates,cancelledEvent,showsSourceContent} from './lib.js?v=3';
 const $=id=>document.getElementById(id);let data,kind='all',savedOnly=false,limit=24,saved=[];
 try{const s=JSON.parse(localStorage.getItem('go-out-saved-v1'));if(Array.isArray(s))saved=s.filter(x=>typeof x==='string');}catch{}
 function el(tag,cls,text){const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;}
 function toast(text){$('toast').textContent=text;$('toast').style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('toast').style.display='none',3200);}
 function toggle(id){saved=saved.includes(id)?saved.filter(x=>x!==id):[...saved,id];try{localStorage.setItem('go-out-saved-v1',JSON.stringify(saved));toast(saved.includes(id)?'行きたいリストに保存しました':'保存を解除しました');}catch{toast('ブラウザに保存できません。このページ内だけで保持します。');}render();}
 function safeUrl(raw){try{const u=new URL(raw);return ['https:','http:'].includes(u.protocol)?u.href:null;}catch{return null;}}
-function photo(item,cls){const img=el('img',cls);img.alt=item.title;img.loading='lazy';const u=safeUrl(item.image);if(u)img.src=u;img.onerror=()=>{img.removeAttribute('src');img.alt='写真は公式サイトでご確認ください';img.onerror=null;};return img;}
+// 写真は、載せてよい情報源（ホットペッパーグルメ）のものだけ出す。ほかは種類の名前を書いた枠にして、写真は掲載元のページで見てもらう
+function photo(item,cls){const u=showsSourceContent(item)?safeUrl(item.image):null;if(!u){const box=el('div',cls?`no-photo ${cls}`:'no-photo');box.setAttribute('aria-hidden','true');box.append(el('span','no-photo-genre',item.genres?.[0]||'よりみち'),el('span','no-photo-note','写真は掲載元で'));return box;}const img=el('img',cls);img.alt=item.title;img.loading='lazy';img.src=u;img.onerror=()=>{img.removeAttribute('src');img.alt='写真は公式サイトでご確認ください';img.onerror=null;};return img;}
 function actionLink(text,url,cls){const a=el('a',cls,text);a.href=safeUrl(url)||'#';a.rel='noopener noreferrer';return a;}
 function filters(){const today=todayJST();return {type:kind,area:$('area').value,genre:$('genre').value,transport:$('transport').value,query:$('search').value.trim(),window:dateWindow($('when').value,$('custom-date').value,today),today};}
 // 「a / / b」のように続いた区切りを1つにする。詳しい画面では区切りを改行にして読みやすくする
@@ -37,13 +38,13 @@ function render(){
  $('more').hidden=items.length<=limit;
 }
 function detail(item){
- const body=$('detail-body');body.replaceChildren(photo(item,'detail-image'));const content=el('div','detail-content');content.append(el('span','area',item.area),el('h2','',item.title),el('p','',item.intro));
+ const body=$('detail-body');body.replaceChildren(photo(item,'detail-image'));const content=el('div','detail-content');content.append(el('span','area',item.area),el('h2','',item.title),showsSourceContent(item)?el('p','',item.intro):el('p','source-note','写真と紹介文は、掲載元のページでご覧ください。'));
  const facts=el('dl','facts');const rows=[['開催日',item.type==='event'?item.dateText:''],['場所',item.venue],['住所',item.address],['時間',item.hours],['休日',item.closed],['料金',item.price],['アクセス',item.access],['駐車場',item.parking]];for(const [key,value] of rows){if(!value)continue;const row=el('div');row.append(el('dt','',key),el('dd','',lines(value)));facts.append(row);}content.append(facts);
  const links=el('div','detail-links');links.append(actionLink(item.sourceName?'掲載元で確認 ↗':'公式情報を確認 ↗',item.url));
  const transport=$('transport').value,mode=transport==='car'?'driving':transport==='transit'?'transit':'';
  const destination=(item.address+' '+item.title.replace(/^20\d{2}\s*/,'' )).trim();
  links.append(actionLink(mode?'選んだ移動手段で経路を見る ↗':'Google マップで見る ↗',mode?`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&travelmode=${mode}`:`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destination)}`,'secondary'));
- const save=el('button','detail-save',saved.includes(item.id)?'♥ 保存済み':'♡ 行きたい');save.onclick=()=>{toggle(item.id);save.textContent=saved.includes(item.id)?'♥ 保存済み':'♡ 行きたい';};links.append(save);const credit=el('p','source-credit');credit.append(actionLink(item.sourceName?'Powered by '+item.sourceName:'情報・画像：鹿児島県観光サイト「かごしまの旅」',item.sourceUrl||'https://www.kagoshima-kankou.com/'),document.createTextNode(' / 確認 '+new Date(item.checkedAt).toLocaleDateString('ja-JP')));content.append(links,credit);body.append(content);$('detail').showModal();
+ const save=el('button','detail-save',saved.includes(item.id)?'♥ 保存済み':'♡ 行きたい');save.onclick=()=>{toggle(item.id);save.textContent=saved.includes(item.id)?'♥ 保存済み':'♡ 行きたい';};links.append(save);const credit=el('p','source-credit');credit.append(actionLink(item.sourceName?'Powered by '+item.sourceName:'情報：鹿児島県観光サイト「かごしまの旅」',item.sourceUrl||'https://www.kagoshima-kankou.com/'),document.createTextNode(' / 確認 '+new Date(item.checkedAt).toLocaleDateString('ja-JP')));content.append(links,credit);body.append(content);$('detail').showModal();
 }
 $('close').onclick=()=>$('detail').close();$('detail').addEventListener('click',event=>{if(event.target===$('detail')){const r=$('detail').getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)$('detail').close();}});
 $('custom-date').value=todayJST();

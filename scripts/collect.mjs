@@ -1,7 +1,7 @@
 import {collectLocalNews} from './local-news.mjs';
 import {load} from 'cheerio';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
-import {parseDates,accessFlags,cancelledEvent,EVENT_LINK,GUIDE_LINK} from '../docs/lib.js';
+import {parseDates,accessFlags,cancelledEvent,EVENT_LINK,GUIDE_LINK,withoutSourceContent} from '../docs/lib.js';
 import {collectHotpepper} from './hotpepper.mjs';
 const base='https://www.kagoshima-kankou.com';
 const clean=s=>String(s||'').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
@@ -16,7 +16,8 @@ for(let area=1;area<=7;area++){
 }
 let previous={items:[]};try{previous=JSON.parse(await readFile(new URL('../docs/data.json',import.meta.url)));}catch{}
 // 前回の情報も残す（今回の一覧に出なかったページのため）。イベントの日付は、今の読み方で読み直す（終わったイベントを外せるように）
-const records=new Map(previous.items.filter(x=>!x.id.startsWith('hotpepper-')&&(EVENT_LINK.test(x.url)||GUIDE_LINK.test(x.url))).map(x=>[x.url,x.type==='event'?{...x,ranges:parseDates(x.dateText),cancelled:cancelledEvent(x.title,x.dateText)}:x]));let success=0;
+// 前回までに保存した写真と紹介文は消す（掲載元の利用条件のため。写真と紹介文は掲載元のページで見てもらう）
+const records=new Map(previous.items.filter(x=>!x.id.startsWith('hotpepper-')&&(EVENT_LINK.test(x.url)||GUIDE_LINK.test(x.url))).map(x=>[x.url,withoutSourceContent(x.type==='event'?{...x,ranges:parseDates(x.dateText),cancelled:cancelledEvent(x.title,x.dateText)}:x)]));let success=0;
 const urls=[...links];
 for(let i=0;i<urls.length;i+=4){
  await Promise.all(urls.slice(i,i+4).map(async url=>{
@@ -35,8 +36,8 @@ for(let i=0;i<urls.length;i+=4){
    if(!genres.length)genres.push(type==='event'?'祭り・イベント':'文化・体験');
    const access=fields['交通アクセス']||fields['アクセス']||'';const parking=fields['駐車場']||'';
    const {car,transit}=accessFlags(access,parking);
-   const image=$('meta[property="og:image"]').attr('content')||'';
-   const intro=clean($('meta[name="description"]').attr('content')).slice(0,115);
+   // 写真（og:image）と紹介文（description）は集めない。掲載元の利用条件で無断の転載・改変が禁じられているため
+   const image='',intro='';
    records.set(url,{id:url.split('/').slice(-2).join('-'),url,title,type,area,address,genres,dateText,ranges,cancelled,hours:fields['開催時間']||fields['営業時間']||'',closed:fields['休日']||fields['休業日']||'',price:fields['料金']||'',access,parking,car,transit,image,intro,venue:fields['開催場所']||'',checkedAt:new Date().toISOString()});success++;
   }catch(e){errors.push(`${url}: ${e.message}`);}
  }));

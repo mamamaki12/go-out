@@ -25,6 +25,11 @@ export function cancelledEvent(title,dateText){
 export function endedEvent(item,today=todayJST()){return item.type==='event'&&item.ranges.length>0&&item.ranges.every(r=>r.end<today);}
 // 検索で、全角・半角、大文字・小文字、ひらがな・カタカナ、空白の違いを気にしない
 export function searchText(s){return String(s||'').normalize('NFKC').toLowerCase().replace(/[\u30a1-\u30f6]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60)).replace(/\s+/g,'');}
+// 写真と紹介文を載せてよい情報源（ホットペッパーグルメは、同社の Web サービスの決まりに沿って表示する）。
+// 「かごしまの旅」は無断の転載・改変が禁じられているので、写真と紹介文は載せず、日時・場所などの事実と掲載元へのリンクだけにする。
+export const CONTENT_SOURCES=['ホットペッパーグルメ'];
+export const showsSourceContent=item=>CONTENT_SOURCES.includes(item?.sourceName);
+export function withoutSourceContent(item){return showsSourceContent(item)?item:{...item,image:'',intro:''};}
 export function todayJST(){return new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Tokyo'});}
 export function dateWindow(mode,custom,today=todayJST()){
  if(mode==='any')return null;if(mode==='custom')return custom?{start:custom,end:custom}:null;
