@@ -1,21 +1,22 @@
 import {collectLocalNews} from './local-news.mjs';
 import {load} from 'cheerio';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
-import {parseDates,accessFlags} from '../docs/lib.js';
+import {parseDates,accessFlags,cancelledEvent,EVENT_LINK,GUIDE_LINK} from '../docs/lib.js';
 import {collectHotpepper} from './hotpepper.mjs';
 const base='https://www.kagoshima-kankou.com';
 const clean=s=>String(s||'').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
 async function html(url){const r=await fetch(url,{signal:AbortSignal.timeout(25000),headers:{'User-Agent':'GoOutKagoshima/1.0 (+https://github.com/mamamaki12/go-out)'}});if(!r.ok)throw new Error(`${r.status} ${url}`);return load(await r.text());}
 const links=new Set();const errors=[];
 for(let page=1;page<=12;page++){
- try{const $=await html(`${base}/event?st=acs&vw=tile&page=${page}`);$('a[href]').each((_,el)=>{const u=$(el).attr('href');if(/^https:\/\/www.kagoshima-kankou.com\/event\/\d+$/.test(u))links.add(u);});}catch(e){errors.push(e.message);}
+ try{const $=await html(`${base}/event?st=acs&vw=tile&page=${page}`);$('a[href]').each((_,el)=>{const u=$(el).attr('href');if(EVENT_LINK.test(u))links.add(u);});}catch(e){errors.push(e.message);}
 }
 // Include each prefectural area instead of only the most popular city spots.
 for(let area=1;area<=7;area++){
- try{const $=await html(`${base}/guide?rta%5B0%5D=${area}`);let n=0;$('a[href]').each((_,el)=>{const u=$(el).attr('href');if(/^https:\/\/www.kagoshima-kankou.com\/guide\/\d+$/.test(u)&&n++<18)links.add(u);});}catch(e){errors.push(e.message);}
+ try{const $=await html(`${base}/guide?rta%5B0%5D=${area}`);let n=0;$('a[href]').each((_,el)=>{const u=$(el).attr('href');if(GUIDE_LINK.test(u)&&n++<18)links.add(u);});}catch(e){errors.push(e.message);}
 }
 let previous={items:[]};try{previous=JSON.parse(await readFile(new URL('../docs/data.json',import.meta.url)));}catch{}
-const records=new Map(previous.items.filter(x=>!x.id.startsWith('hotpepper-')).map(x=>[x.url,x]));let success=0;
+// 前回の情報も残す（今回の一覧に出なかったページのため）。イベントの日付は、今の読み方で読み直す（終わったイベントを外せるように）
+const records=new Map(previous.items.filter(x=>!x.id.startsWith('hotpepper-')&&(EVENT_LINK.test(x.url)||GUIDE_LINK.test(x.url))).map(x=>[x.url,x.type==='event'?{...x,ranges:parseDates(x.dateText),cancelled:cancelledEvent(x.title,x.dateText)}:x]));let success=0;
 const urls=[...links];
 for(let i=0;i<urls.length;i+=4){
  await Promise.all(urls.slice(i,i+4).map(async url=>{
@@ -28,7 +29,7 @@ for(let i=0;i<urls.length;i+=4){
    const area=address.includes('鹿児島市')?'鹿児島市・桜島':areaText.includes('霧島')?'霧島・姶良':areaText.includes('北薩摩')?'北薩摩':areaText.includes('中薩摩')?'日置・いちき串木野':areaText.includes('南薩摩')?'指宿・南薩摩':areaText.includes('大隅')?'大隅':/種子|屋久|熊毛|西之表/.test(areaText+address)?'種子島・屋久島':/奄美|大島郡|十島|三島|喜界|徳之島|沖永良部|与論/.test(areaText+address)?'奄美・離島':'その他';
    const dateText=fields['開催日']||'';const type=dateText?'event':'spot';
    const ranges=type==='event'?parseDates(dateText):[];
-   const cancelled=type==='event'&&/中止|延期/.test(title+' '+dateText)&&!/荒天中止|雨天中止/.test(title+' '+dateText);
+   const cancelled=type==='event'&&cancelledEvent(title,dateText);
    const genreText=tags.join(' ')+' '+title;
    const genres=[];for(const [name,re] of [['自然・公園',/自然|花|公園|海水浴|海岸|滝|山|展望|庭園/],['温泉',/温泉|足湯|砂むし/],['グルメ・買い物',/グルメ|食|定期市|マルシェ|市場|物産|特産|カフェ|ショッピング/],['文化・体験',/文化|史跡|神社|寺|美術|博物|アート|歴史|体験|工芸|窯|音楽/],['祭り・イベント',/祭|花火|イルミ|イベント|スポーツ|スタンプ|キャンペーン/]])if(re.test(genreText))genres.push(name);
    if(!genres.length)genres.push(type==='event'?'祭り・イベント':'文化・体験');
